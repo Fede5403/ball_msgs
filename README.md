@@ -1,83 +1,118 @@
-# DARwIn-OP Robot Arm Control via Motor Map
+# ball_msgs
 
 ## Overview
 
-This project implements automated arm movement control for the DARwIn-OP robot. Initially designed with PlayStation 4 joystick control, the system now features autonomous control through a motor map, enabling the robot to automatically adjust its arms to balance a ball within a water-filled tube.
+`ball_msgs` is a ROS message package that defines custom messages for ball tracking in the DARwIn-OP robot control system. This package facilitates communication between the vision system and the motor map control node.
 
-## Key Features
+## Message Types
 
-* **ROS op2_motormap Node**: Manages arm movement automation
-* **Custom Message Type (ball_msgs/ball)**: Contains ball distance and velocity data from the robot's vision system
-* **Vision System Integration**: Real-time vision data processing for calculating arm joint angles using the motor map algorithm
+### ball.msg
 
-## Project Structure
-
-### Custom Message Definition
-
-A custom ROS message `ball_msgs/ball` facilitates communication between the vision system and motor map node:
+This message type contains information about the ball's position and movement:
 
 ```
-float32 distance
-float32 velocity
+float32 distance  # Distance of the ball from the center
+float32 velocity  # Current velocity of the ball
 ```
-
-### Data Publication and ROS Integration
-
-The processed data (ball distance from center and velocity) is encapsulated in the custom `ball_msgs/ball` ROS message. The vision system publishes this message to the `/ball_topic` at a rate synchronized with frame capture. This ensures real-time data availability for other nodes in the ROS network, particularly the motor map control system which subscribes to this topic for sensor data.
-
-## Requirements
-
-* **ROS (Robot Operating System)**: Compatible version with developed node
-* **DARwIn-OP Robot**: Configured and operational
-* **Integrated Vision System**: For ball detection
-* **PlayStation 4 Controller**: Required only for initial manual control phase
-
-## Installation
-
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/alessandonicosia/darwin-op-motormap-control.git
-   ```
-
-2. **Navigate to Project Directory**
-   ```bash
-   cd darwin-op-motormap-control
-   ```
-
-3. **Install Dependencies**
-   ```bash
-   rosdep install --from-paths src --ignore-src -r -y
-   ```
-
-4. **Build the Project**
-   ```bash
-   catkin_make
-   ```
-
-5. **Source the Workspace**
-   ```bash
-   source devel/setup.bash
-   ```
 
 ## Usage
 
-1. **Start the Vision System**
-   * Ensure the vision system is active and correctly publishing `ball_msgs/ball` messages to `/ball_topic`
+### Publishing Messages
 
-2. **Launch the Motor Map Node**
+```cpp
+#include <ball_msgs/ball.h>
+
+// Create and publish the message
+ball_msgs::ball ball_data;
+ball_data.distance = current_distance;
+ball_data.velocity = current_velocity;
+publisher.publish(ball_data);
+```
+
+### Subscribing to Messages
+
+```cpp
+#include <ball_msgs/ball.h>
+
+void ballCallback(const ball_msgs::ball::ConstPtr& msg)
+{
+    float distance = msg->distance;
+    float velocity = msg->velocity;
+    // Process the data
+}
+
+// In your node's main function
+ros::Subscriber sub = nh.subscribe("/ball_topic", 1, ballCallback);
+```
+
+## Installation
+
+1. **Add to Your Workspace**
    ```bash
-   rosrun op2_motormap op2_motormap_node
+   cd ~/catkin_ws/src
+   git clone <repository_url>/ball_msgs.git
    ```
 
-3. **Monitor Arm Movement**
-   * The op2_motormap node will process incoming data and automatically control the robot's arms to balance the ball within the tube
+2. **Build the Package**
+   ```bash
+   cd ~/catkin_ws
+   catkin_make
+   ```
 
-## Author
+3. **Source Your Workspace**
+   ```bash
+   source ~/catkin_ws/devel/setup.bash
+   ```
 
-* Alessandro Nicosia
+## Dependencies
 
-## Notes
+* `message_generation`
+* `message_runtime`
+* `std_msgs`
 
-This README was generated with the assistance of ChatGPT, a language model developed by OpenAI.
+## Package Structure
 
-For further information, issues, or contributions, please visit the GitHub repository.
+```
+ball_msgs/
+├── CMakeLists.txt
+├── package.xml
+└── msg/
+    └── ball.msg
+```
+
+## Integration with the Vision System
+
+The vision system publishes ball data using this message type to the `/ball_topic` topic. The motor map control system subscribes to this topic to receive real-time updates about the ball's position and velocity for automated arm control.
+
+## Build Configuration
+
+### CMakeLists.txt
+
+Ensure your CMakeLists.txt includes:
+
+```cmake
+find_package(catkin REQUIRED COMPONENTS
+  message_generation
+  std_msgs
+)
+
+add_message_files(
+  FILES
+  ball.msg
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
+```
+
+### package.xml
+
+Required dependencies in package.xml:
+
+```xml
+<build_depend>message_generation</build_depend>
+<exec_depend>message_runtime</exec_depend>
+<depend>std_msgs</depend>
+```
